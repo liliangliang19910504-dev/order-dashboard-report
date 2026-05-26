@@ -1,0 +1,36 @@
+name: Daily Dashboard Report
+
+on:
+  workflow_dispatch:  # 手动 / Vercel cron 触发
+  # 备用 GitHub schedule (有 3.5h+ 延迟,不推荐)
+  # schedule:
+  #   - cron: '30 0 * * *'  # 00:30 UTC = 08:30 北京
+
+permissions:
+  contents: write  # 提交截图
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Run report
+        env:
+          DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
+          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
+        run: python report.py
