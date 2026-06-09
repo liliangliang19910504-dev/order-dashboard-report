@@ -1,0 +1,30 @@
+name: SMT JIT 缺货日报
+
+on:
+  workflow_dispatch:  # 手动 / Vercel cron 触发
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install deps
+        run: pip install pymysql==1.1.1 requests==2.32.3
+
+      - name: Run OOS JIT report
+        env:
+          DORIS_HOST: ${{ secrets.DORIS_HOST }}
+          DORIS_PORT: ${{ secrets.DORIS_PORT }}
+          DORIS_DB: ${{ secrets.DORIS_DB }}
+          DORIS_USER: ${{ secrets.DORIS_USER }}
+          DORIS_PASS: ${{ secrets.DORIS_PASS }}
+          DINGTALK_OOS_WEBHOOK: ${{ secrets.DINGTALK_OOS_WEBHOOK }}
+        run: python oos_jit_report.py
