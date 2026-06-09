@@ -1,0 +1,30 @@
+name: 低毛利 SKU 日报
+
+on:
+  workflow_dispatch:  # 手动 / Vercel cron 触发
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install deps
+        run: pip install pymysql==1.1.1 requests==2.32.3
+
+      - name: Run low margin report
+        env:
+          DORIS_HOST: ${{ secrets.DORIS_HOST }}
+          DORIS_PORT: ${{ secrets.DORIS_PORT }}
+          DORIS_DB: ${{ secrets.DORIS_DB }}
+          DORIS_USER: ${{ secrets.DORIS_USER }}
+          DORIS_PASS: ${{ secrets.DORIS_PASS }}
+          DINGTALK_LOW_MARGIN_WEBHOOK: ${{ secrets.DINGTALK_LOW_MARGIN_WEBHOOK }}
+        run: python low_margin_report.py
