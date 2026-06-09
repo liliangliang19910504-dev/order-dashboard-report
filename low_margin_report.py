@@ -54,7 +54,9 @@ def fetch_low_margin_skus(yesterday: str) -> list[dict]:
         SELECT
           s.店长,
           s.SKU,
-          COUNT(DISTINCT s.订单号) AS oos_count
+          COUNT(DISTINCT s.订单号) AS oos_count,
+          ROUND(AVG(o.订单总毛利), 2) AS avg_margin,
+          ROUND(MIN(o.订单总毛利), 2) AS min_margin
         FROM mv_sell_lll s
         JOIN mv_order_lll o ON s.订单号 = o.订单编号
         LEFT JOIN (SELECT DISTINCT 店铺, 平台 FROM mv_daily_sales_order_lll) p
@@ -72,7 +74,16 @@ def fetch_low_margin_skus(yesterday: str) -> list[dict]:
     )
     rows = cursor.fetchall()
     conn.close()
-    return [{"manager": r[0], "sku": r[1], "orders": int(r[2])} for r in rows]
+    return [
+        {
+            "manager": r[0],
+            "sku": r[1],
+            "orders": int(r[2]),
+            "avg_margin": float(r[3] or 0),
+            "min_margin": float(r[4] or 0),
+        }
+        for r in rows
+    ]
 
 
 def build_markdown_and_mentions(items: list[dict], yesterday: str) -> tuple[str, list[str]]:
@@ -115,8 +126,15 @@ def build_markdown_and_mentions(items: list[dict], yesterday: str) -> tuple[str,
             mentions.append(phone)
         else:
             lines.append(f"**{mgr}**  ⚠️ 未配置手机号")
+        lines.append("")
+        lines.append("| SKU | 单数 | 均毛利 | 最低 |")
+        lines.append("| --- | ---: | ---: | ---: |")
         for it in sku_list:
-            lines.append(f"- `{it['sku']}`")
+            min_m = it["min_margin"]
+            min_str = f"**{min_m:.2f}** ❗" if min_m < 0 else f"{min_m:.2f}"
+            lines.append(
+                f"| `{it['sku']}` | {it['orders']} | {it['avg_margin']:.2f} | {min_str} |"
+            )
         lines.append("")
 
     return "\n".join(lines), mentions
