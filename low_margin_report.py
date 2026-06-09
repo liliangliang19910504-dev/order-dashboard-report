@@ -66,6 +66,7 @@ def fetch_low_margin_skus(yesterday: str) -> list[dict]:
           AND o.订单总毛利 < %s
           AND DATE(s.订单时间) = %s
           AND s.店长 IS NOT NULL AND s.店长 <> ''
+          AND (o.订单状态 IS NULL OR o.订单状态 <> '作废')
         GROUP BY s.店长, s.SKU
         HAVING COUNT(DISTINCT s.订单号) >= %s
         ORDER BY s.店长, oos_count DESC
